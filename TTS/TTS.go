@@ -3,7 +3,9 @@ package TTS
 import (
 	"Coursework/config"
 	"bytes"
-	"errors"
+	"encoding/json"
+	"encoding/xml"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 )
@@ -21,30 +23,69 @@ func check(e error) {
 		panic(e)
 	}
 }
-func TextToSpeech(text []byte) ([]byte, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", URI, bytes.NewBuffer(text))
-	check(err)
-	req.Header.Set("Content-Type", "application/ssml+xml")
-	req.Header.Set("Ocp-Apim-Subscription-Key", KEY)
-	req.Header.Set("X-Microsoft-OutputFormat", "riff-16khz-16bit-mono-pcm")
-	rsp, err2 := client.Do(req)
-	check(err2)
-	defer rsp.Body.Close()
-	if rsp.StatusCode == http.StatusOK {
-		body, err3 := ioutil.ReadAll(rsp.Body)
-		check(err3)
-		return body, nil
+
+type Speak struct {
+	XMLName xml.Name `xml:"speak"`
+	Text    string   `xml:",chardata"`
+	Version string   `xml:"version,attr"`
+	Lang    string   `xml:"xml:lang,attr"`
+	Voice   Voice
+}
+
+type Voice struct {
+	XMLName xml.Name `xml:"voice"`
+	Text    string   `xml:",chardata"`
+	Lang    string   `xml:"xml:lang,attr"`
+	Name    string   `xml:"name,attr"`
+}
+
+func TextToSpeech(w http.ResponseWriter, r *http.Request) {
+	t := map[string]string{}
+	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
+		if cont, ok := t["contents"]; ok {
+			client := &http.Client{}
+			v := &Voice{
+				XMLName: xml.Name{},
+				Text:    cont,
+				Lang:    "en-US",
+				Name:    "en-US-JennyNeural",
+			}
+			s := &Speak{
+				XMLName: xml.Name{},
+				Text:    "",
+				Version: "1.0",
+				Lang:    "en-US",
+				Voice:   *v,
+			}
+
+			m, _ := xml.MarshalIndent(s, "", "  ")
+			req, err2 := http.NewRequest("POST", URI, bytes.NewReader(m))
+			check(err2)
+			req.Header.Set("Content-Type", "application/ssml+xml")
+			req.Header.Set("Ocp-Apim-Subscription-Key", KEY)
+			req.Header.Set("X-Microsoft-OutputFormat", "riff-16khz-16bit-mono-pcm")
+
+			rsp, err3 := client.Do(req)
+			check(err3)
+			defer rsp.Body.Close()
+			if rsp.StatusCode == http.StatusOK {
+				body, err4 := ioutil.ReadAll(rsp.Body)
+				check(err4)
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(body)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	} else {
-		return nil, errors.New("cannot convert text to speech")
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
-func Run() {
-	text, err := ioutil.ReadFile("text.xml")
-	check(err)
-	speech, err2 := TextToSpeech(text)
-	check(err2)
-	err3 := ioutil.WriteFile("speech.wav", speech, 0644)
-	check(err3)
 
+func Run() {
+	r := mux.NewRouter()
+	r.HandleFunc("/tts", TextToSpeech).Methods("POST")
+	http.ListenAndServe(":3003", r)
 }

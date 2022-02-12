@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	AppID = config.AlphaApiKey
+	AppID = config.GetAlphaKey()
 	URI   = "https://api.wolframalpha.com/v1/result?appid=" + AppID
 )
 

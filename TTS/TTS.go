@@ -39,6 +39,10 @@ type Voice struct {
 	Name    string   `xml:"name,attr"`
 }
 
+type Speech struct {
+	Speech []uint8 `json:"speech"`
+}
+
 func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	t := map[string]string{}
 	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
@@ -72,7 +76,8 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 				body, err4 := ioutil.ReadAll(rsp.Body)
 				check(err4)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(body)
+				speech := Speech{Speech: body}
+				json.NewEncoder(w).Encode(speech)
 			} else {
 				w.WriteHeader(http.StatusNotFound)
 			}

@@ -3,7 +3,8 @@ package Alpha
 import (
 	"Coursework/config"
 	"bytes"
-	"errors"
+	"encoding/json"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 )
@@ -13,24 +14,38 @@ var (
 	URI   = "https://api.wolframalpha.com/v1/result?appid=" + AppID
 )
 
-func QueryWolframAlpha(text []byte) ([]byte, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", URI, bytes.NewBuffer(text))
-	check(err)
+type Text struct {
+	Text string `json:"text"`
+}
 
-	q := req.URL.Query()
-	q.Add("i", "population of france")
+func QueryWolframAlpha(w http.ResponseWriter, r *http.Request) {
+	t := map[string]string{}
+	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
+		if text, ok := t["text"]; ok {
+			client := &http.Client{}
+			req, err := http.NewRequest("POST", URI, bytes.NewBuffer([]byte(text)))
+			check(err)
 
-	req.URL.RawQuery = q.Encode()
-	rsp, err2 := client.Do(req)
-	check(err2)
-	defer rsp.Body.Close()
-	if rsp.StatusCode == http.StatusOK {
-		body, err3 := ioutil.ReadAll(rsp.Body)
-		check(err3)
-		return body, nil
+			q := req.URL.Query()
+			q.Add("i", text)
+
+			req.URL.RawQuery = q.Encode()
+			rsp, err2 := client.Do(req)
+			check(err2)
+			defer rsp.Body.Close()
+			if rsp.StatusCode == http.StatusOK {
+				body, err3 := ioutil.ReadAll(rsp.Body)
+				check(err3)
+				text := Text{Text: string(body)}
+				json.NewEncoder(w).Encode(text)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	} else {
-		return nil, errors.New("cannot convert text to speech")
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -41,9 +56,7 @@ func check(e error) {
 }
 
 func Run() {
-	text, err := ioutil.ReadFile("wolf.xml")
-	check(err)
-	response, err := QueryWolframAlpha(text)
-	check(err)
-	print(string(response))
+	r := mux.NewRouter()
+	r.HandleFunc("/alpha", QueryWolframAlpha).Methods("POST")
+	http.ListenAndServe(":3001", r)
 }

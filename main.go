@@ -1,9 +1,9 @@
 package main
 
-import "Coursework/STT"
+import "Coursework/Alpha"
 
 func main() {
 	//TTS.Run()
-	STT.Run()
-	//Alpha.Run()
+	//STT.Run()
+	Alpha.Run()
 }

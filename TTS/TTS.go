@@ -3,6 +3,7 @@ package TTS
 import (
 	"Coursework/config"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"github.com/gorilla/mux"
@@ -40,7 +41,7 @@ type Voice struct {
 }
 
 type Speech struct {
-	Speech []uint8 `json:"speech"`
+	Speech string `json:"speech"`
 }
 
 func TextToSpeech(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +77,8 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 				body, err4 := ioutil.ReadAll(rsp.Body)
 				check(err4)
 				w.WriteHeader(http.StatusOK)
-				speech := Speech{Speech: body}
+				EncBody := base64.URLEncoding.EncodeToString(body)
+				speech := Speech{Speech: EncBody}
 				json.NewEncoder(w).Encode(speech)
 			} else {
 				w.WriteHeader(http.StatusNotFound)

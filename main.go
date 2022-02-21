@@ -1,9 +1,14 @@
 package main
 
-import "Coursework/Alpha"
+import (
+	"Coursework/Alexa"
+	"Coursework/STT"
+)
 
 func main() {
 	//TTS.Run()
-	//STT.Run()
-	Alpha.Run()
+	Alexa.Run()
+	STT.Run()
+	//Alpha.Run()
+
 }

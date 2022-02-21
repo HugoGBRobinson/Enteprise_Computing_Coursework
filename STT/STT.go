@@ -1,4 +1,4 @@
-package STT
+package main
 
 import (
 	"Coursework/config"
@@ -68,7 +68,7 @@ func SpeechToText(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
-func Run() {
+func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/stt", SpeechToText).Methods("POST")
 	http.ListenAndServe(":3002", r)

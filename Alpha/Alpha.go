@@ -37,6 +37,7 @@ func QueryWolframAlpha(w http.ResponseWriter, r *http.Request) {
 				body, err3 := ioutil.ReadAll(rsp.Body)
 				check(err3)
 				text := Text{Text: string(body)}
+				w.WriteHeader(http.StatusOK)
 				json.NewEncoder(w).Encode(text)
 			} else {
 				w.WriteHeader(http.StatusNotFound)

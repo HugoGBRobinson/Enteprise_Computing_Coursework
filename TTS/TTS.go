@@ -1,4 +1,4 @@
-package TTS
+package main
 
 import (
 	"Coursework/config"
@@ -47,7 +47,7 @@ type Speech struct {
 func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	t := map[string]string{}
 	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
-		if cont, ok := t["contents"]; ok {
+		if cont, ok := t["text"]; ok {
 			client := &http.Client{}
 			v := &Voice{
 				XMLName: xml.Name{},
@@ -77,7 +77,7 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 				body, err4 := ioutil.ReadAll(rsp.Body)
 				check(err4)
 				w.WriteHeader(http.StatusOK)
-				EncBody := base64.URLEncoding.EncodeToString(body)
+				EncBody := base64.StdEncoding.EncodeToString(body)
 				speech := Speech{Speech: EncBody}
 				json.NewEncoder(w).Encode(speech)
 			} else {
@@ -91,7 +91,7 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Run() {
+func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/tts", TextToSpeech).Methods("POST")
 	http.ListenAndServe(":3003", r)

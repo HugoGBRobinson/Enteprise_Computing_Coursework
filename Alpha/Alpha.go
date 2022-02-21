@@ -1,4 +1,4 @@
-package Alpha
+package main
 
 import (
 	"Coursework/config"
@@ -56,7 +56,7 @@ func check(e error) {
 	}
 }
 
-func Run() {
+func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/alpha", QueryWolframAlpha).Methods("POST")
 	http.ListenAndServe(":3001", r)

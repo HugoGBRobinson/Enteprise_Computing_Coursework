@@ -11,12 +11,16 @@ import (
 	"net/http"
 )
 
+//REGION and URI provide constant a URI to connect to
+//Microsoft Cognitive Services.
 const (
 	REGION = "uksouth"
 	URI    = "https://" + REGION + ".tts.speech.microsoft.com/" +
 		"cognitiveservices/v1"
 )
 
+//KEY is the provided access key, it is obtained through the
+//config file.
 var KEY = config.GetAzureKey()
 
 func check(e error) {
@@ -25,6 +29,9 @@ func check(e error) {
 	}
 }
 
+// Speak is a structure that details the specific format used by
+//Azure for its text to speech services. This format is inline with
+//the Speech Synthesis Markup Language (SSML).
 type Speak struct {
 	XMLName xml.Name `xml:"speak"`
 	Text    string   `xml:",chardata"`
@@ -33,6 +40,8 @@ type Speak struct {
 	Voice   Voice
 }
 
+// Voice much like Speak, follows the SSML structure and is used
+//For the nested XML required by Azure.
 type Voice struct {
 	XMLName xml.Name `xml:"voice"`
 	Text    string   `xml:",chardata"`
@@ -40,15 +49,21 @@ type Voice struct {
 	Name    string   `xml:"name,attr"`
 }
 
+//Speech provides the necessary structure to create a json speech
+//response.
 type Speech struct {
 	Speech string `json:"speech"`
 }
 
+// TextToSpeech is the primary function of this microservice as it
+// decodes the request, marshals a xml request to Azure, and
+// marshals a json response with the .wav back to Alexa.
 func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	t := map[string]string{}
 	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
 		if cont, ok := t["text"]; ok {
 			client := &http.Client{}
+			// Set up xml request to Azure
 			v := &Voice{
 				XMLName: xml.Name{},
 				Text:    cont,
@@ -77,6 +92,7 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 				body, err4 := ioutil.ReadAll(rsp.Body)
 				check(err4)
 				w.WriteHeader(http.StatusOK)
+				// Encode speech to base 64
 				EncBody := base64.StdEncoding.EncodeToString(body)
 				speech := Speech{Speech: EncBody}
 				json.NewEncoder(w).Encode(speech)
@@ -91,6 +107,8 @@ func TextToSpeech(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//main sets up the listen and serve functionality allowing Alexa to
+//request its services.
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/tts", TextToSpeech).Methods("POST")

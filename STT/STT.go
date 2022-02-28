@@ -10,6 +10,8 @@ import (
 	"net/http"
 )
 
+//REGION and URI provide constant a URI to connect to
+//Microsoft Cognitive Services.
 const (
 	REGION = "uksouth"
 	URI    = "https://" + REGION + ".stt.speech.microsoft.com/" +
@@ -17,6 +19,8 @@ const (
 		"language=en-US"
 )
 
+//KEY is the provided access key, it is obtained through the
+//config file.
 var KEY = config.GetAzureKey()
 
 func check(e error) {
@@ -25,10 +29,14 @@ func check(e error) {
 	}
 }
 
+//Text provides the necessary structure to create a json text
+//response.
 type Text struct {
 	Text string `json:"text"`
 }
 
+//Body provides the necessary structure to unmarshall the xml
+//response from Azure
 type Body struct {
 	RecognitionStatus string
 	DisplayText       string
@@ -36,6 +44,10 @@ type Body struct {
 	Duration          string
 }
 
+//SpeechToText is the primary function of this file as it takes in
+//the request and response writer, decodes the json request, decodes
+//the speech, marshals a xml response and encodes a new json
+//response back to Alexa.
 func SpeechToText(w http.ResponseWriter, r *http.Request) {
 	t := map[string]string{}
 	if err := json.NewDecoder(r.Body).Decode(&t); err == nil {
@@ -68,6 +80,9 @@ func SpeechToText(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+
+//main sets up the listen and serve functionality allowing Alexa to
+//request its services.
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/stt", SpeechToText).Methods("POST")
